@@ -22,16 +22,20 @@ if(!isset($_SERVER['PHP_AUTH_USER']) || (isset($_SERVER['PHP_AUTH_USER']) &&
                filter_input(INPUT_POST, 'champs', FILTER_SANITIZE_STRING,FILTER_FLAG_NO_ENCODE_QUOTES);
     if($champs != ""){
         $champs = json_decode($champs, true);
-    }
-
+        $champs = str_replace("-", " ", $champs); 
+    }    
+    
     // traitement suivant le verbe HTTP utilisé
     if($_SERVER['REQUEST_METHOD'] === 'GET'){
         $controle->get($table, $champs);
     }else if($_SERVER['REQUEST_METHOD'] === 'POST'){
+        $champs = str_replace("-", " ", $champs);
         $controle->post($table, $champs);
     }else if($_SERVER['REQUEST_METHOD'] === 'PUT'){
         $controle->put($table, $id, $champs);
+        $champs = str_replace("-", " ", $champs);
     }else if($_SERVER['REQUEST_METHOD'] === 'DELETE'){
+        $champs = str_replace("-", " ", $champs);
         $controle->delete($table, $champs);
     }
 
