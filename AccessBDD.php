@@ -66,6 +66,8 @@ class AccessBDD {
             switch($table){
                 case "exemplaire" :
                     return $this->selectExemplairesRevue($champs['id']);
+                case "commandedocument":
+                    return $this->selectExemplaireLivre($champs['idLivreDvd']);
                 default:                    
                     // cas d'un select sur une table avec recherche sur des champs
                     $champs = str_replace("-", " ", $champs);
@@ -173,6 +175,24 @@ class AccessBDD {
         $req .= "order by e.dateAchat DESC";		
         return $this->conn->query($req, $param);
     }		
+    
+    /**
+     * Recuperation de touts les exemplaires d'un livre_dvd
+     * @param string $id id du livre_dvd
+     * @return ligne de ka requete
+     */
+    public function selectExemplaireLivres($idLivreDvd) {
+        $param = array(
+            "idLivreDvd"=> $idLivreDvd
+        );
+        $req = "Select cd.id, c.dateCommande, c.montant, cd.nbExemplaire, cd.idLivreDvd";
+        $req .= "cd.idsuivi, s.etat";
+        $req .= "from commandedocument cd join commande c on cd.id = c.id";
+        $req .= "join suivi s on cd.idsuivi=s.id";
+        $req .= "where cd.idLivreDvd = idLivreDvd";
+        $req .= "order by c.dateCommande DESC "; 
+        return $this->conn->query($req, $param); 
+    }
 
     /**
      * suppresion d'une ou plusieurs lignes dans une table
