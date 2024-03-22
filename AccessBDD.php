@@ -38,6 +38,14 @@ class AccessBDD {
                     return $this->selectAllDvd();
                 case "revue" :
                     return $this->selectAllRevues();
+                case "maxcommande" :
+                    return $this->selectMaxCommande();
+                case "maxlivre":
+                    return $this ->selectMaxLivre();
+                case "maxdvd":
+                    return $this ->selectMaxDvd();
+                case "maxrevue":
+                    return $this ->selectMaxRevue();
                 case "exemplaire" :
                     return $this->selectExemplairesRevue();
                 case "genre" :
@@ -66,9 +74,13 @@ class AccessBDD {
             switch($table){
                 case "exemplaire" :
                     return $this->selectExemplairesRevue($champs['id']);
+                case "commandedocument":
+                    return $this->selectCommandesDocument($champs['idLivreDvd']);
+                case "abonnements":
+                    return $this->selectAbonnementRevue($champs['idRevue']);
                 default:                    
                     // cas d'un select sur une table avec recherche sur des champs
-                    $champs = str_replace("-", " ", $champs);
+                    
                     return $this->selectTableOnConditons($table, $champs);					
             }				
         }else{
@@ -172,7 +184,63 @@ class AccessBDD {
         $req .= "where e.id = :id ";
         $req .= "order by e.dateAchat DESC";		
         return $this->conn->query($req, $param);
-    }		
+           
+    }
+    
+    /**
+     * retourne la plus grande id de la table commande
+     * @return lignes de la requete
+     */
+    public function selectMaxCommande(){
+        $req = "Select MAX(id) AS id FROM commande";
+        return $this->conn->query($req, $param);
+    }
+    
+    /**
+     * retourne la plus grande id de la table livre
+     * @return ligne de la requete
+     */
+    public function selectMaxLivre(){
+        $req = "Select MAX(id) AS id FROM livre";
+        return $this->conn->query($req, $param);
+    }
+    
+    /**
+     * retourne la plus grande id de la table dvd
+     * @return ligne de la requete
+     */
+    public function selectMaxDvd(){
+        $req = "Select MAX(id) AS id FROM dvd";
+        return $this->conn->query($req, $param);
+    }
+    
+    /**
+     * retourne la plus grande id de la table revue
+     * @return ligne de la requete
+     */
+    public function selectMaxRevue(){
+        $req = "Select MAX(id) AS id FROM revue";
+        return $this->conn->query($req, $param);
+    }
+    
+    
+     /**
+     * Recuperation de touts les exemplaires d'un livre_dvd
+     * @param string $id id du livre_dvd
+     * @return ligne de la requete
+     */
+    public function selectCommandesDocument($idLivreDvd) {
+        $param = array(
+            "idLivreDvd"=> $idLivreDvd
+        );
+        $req = "Select cd.id, c.dateCommande, c.montant, cd.nbExemplaire, cd.idLivreDvd,";
+        $req .= "cd.idsuivi, s.etat ";
+        $req .= "from commandedocument cd join commande c on cd.id = c.id ";
+        $req .= "join suivi s on cd.idsuivi=s.id ";
+        $req .= "where cd.idLivreDvd = :idLivreDvd "; // il faut bien noter = :idLivreDvd sinon la requete renvoie TOUTE les commandes.
+        $req .= "order by c.dateCommande DESC"; 
+        return $this->conn->query($req, $param); 
+    }
 
     /**
      * suppresion d'une ou plusieurs lignes dans une table
@@ -188,14 +256,33 @@ class AccessBDD {
                 $requete .= "$key=:$key and ";
             }
             // (enlève le dernier and)
-            $requete = substr($requete, 0, strlen($requete)-5);   
+            $requete = substr($requete, 0, strlen($requete)-5);
             return $this->conn->execute($requete, $champs);		
         }else{
             return null;
         }
     }
-
+    
     /**
+     * Suppresion de l'entitée composée commandeDocument dans la bdd
+     *
+     * @param [type] $champs nom et valeur de chaque champs de la ligne
+     * @return true si l'ajout a fonctionné
+     */
+    public function deleteCommande($champs)
+    {
+        $champsCommande = [ "id" => $champs["Id"], "dateCommande" => $champs["DateCommande"],
+            "montant" => $champs["Montant"]];
+        $champsCommandeDocument = [ "id" => $champs["Id"], "nbExemplaire" => $champs["NbExemplaire"],
+                "idLivreDvd" => $champs["IdLivreDvd"], "idsuivi" => $champs["IdSuivi"]];
+        $result = $this->delete("commandedocument", $champsCommandeDocument);
+        if ($result == null || $result == false){
+            return null;
+        }
+        return  $this->delete( "commande", $champsCommande);
+    }
+
+     /**
      * ajout d'une ligne dans une table
      * @param string $table nom de la table
      * @param array $champs nom et valeur de chaque champs de la ligne
@@ -216,11 +303,29 @@ class AccessBDD {
             }
             // (enlève la dernière virgule)
             $requete = substr($requete, 0, strlen($requete)-1);
-            $requete .= ");";	
+            $requete .= ");";
             return $this->conn->execute($requete, $champs);		
         }else{
             return null;
         }
+    }
+     /**
+     * Ajout de l'entitée composée commandeDocument dans la bdd
+     *
+     * @param [type] $champs nom et valeur de chaque champs de la ligne
+     * @return true si l'ajout a fonctionné
+     */
+    public function insertCommande($champs)
+    {
+        $champsCommande = [ "id" => $champs["Id"], "dateCommande" => $champs["DateCommande"],
+            "montant" => $champs["Montant"]];
+        $champsCommandeDocument = [ "id" => $champs["Id"], "nbExemplaire" => $champs["NbExemplaire"],
+                "idLivreDvd" => $champs["IdLivreDvd"], "idsuivi" => $champs["IdSuivi"]];
+        $result = $this->insertOne("commande", $champsCommande);
+        if ($result == null || $result == false){
+            return null;
+        }
+        return  $this->insertOne( "commandedocument", $champsCommandeDocument);
     }
 
     /**
@@ -245,6 +350,26 @@ class AccessBDD {
         }else{
             return null;
         }
+    }
+    
+    /**
+     * Modification de l'entitée composée CommandeDocument dans la bdd
+     *
+     * @param [type] $champs nom et valeur de chaque champs de la ligne
+     * @param [type] $id de l'element
+     * @return true si l'ajout a fonctionné
+     */
+    public function updateCommande($id, $champs)
+    {
+        $champsCommande = [ "id" => $champs["Id"], "dateCommande" => $champs["DateCommande"],
+            "montant" => $champs["Montant"]];
+        $champsCommandeDocument = [ "id" => $champs["Id"], "nbExemplaire" => $champs["NbExemplaire"],
+                "idLivreDvd" => $champs["IdLivreDvd"], "idsuivi" => $champs["IdSuivi"]];
+        $result = $this->updateOne("commande",$id, $champsCommande);
+        if ($result == null || $result == false){
+            return null;
+        }
+        return  $this->updateOne( "commandedocument",$id, $champsCommandeDocument);
     }
 
 }

@@ -29,13 +29,13 @@ if(!isset($_SERVER['PHP_AUTH_USER']) || (isset($_SERVER['PHP_AUTH_USER']) &&
     if($_SERVER['REQUEST_METHOD'] === 'GET'){
         $controle->get($table, $champs);
     }else if($_SERVER['REQUEST_METHOD'] === 'POST'){
-        $champs = str_replace("-", " ", $champs);
+        
         $controle->post($table, $champs);
     }else if($_SERVER['REQUEST_METHOD'] === 'PUT'){
         $controle->put($table, $id, $champs);
-        $champs = str_replace("-", " ", $champs);
+        
     }else if($_SERVER['REQUEST_METHOD'] === 'DELETE'){
-        $champs = str_replace("-", " ", $champs);
+        
         $controle->delete($table, $champs);
     }
 
