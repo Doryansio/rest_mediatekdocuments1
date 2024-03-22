@@ -64,7 +64,7 @@ class Controle{
             $result = $this ->accessBDD->deleteCommande($table, $champs);
         }
         else{
-            $result = $this->accessBDD->delete($table, $champs);
+        $result = $this->accessBDD->delete($table, $champs);
         }
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
@@ -83,7 +83,7 @@ class Controle{
             $result = $this ->accessBDD->insertCommande($table, $champs);
         }
         else{
-            $result = $this->accessBDD->insertOne($table, $champs);	
+        $result = $this->accessBDD->insertOne($table, $champs);	
         }
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
@@ -103,7 +103,7 @@ class Controle{
             $result = $this->accessBDD->updateCommande($id, $champs);
         
         }else{
-            $result = $this->accessBDD->updateOne($table, $id, $champs);
+        $result = $this->accessBDD->updateOne($table, $id, $champs);
         }
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");

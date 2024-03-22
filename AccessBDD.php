@@ -202,7 +202,7 @@ class AccessBDD {
      */
     public function selectMaxLivre(){
         $req = "Select MAX(id) AS id FROM livre";
-        return $this->conn->query($req);
+        return $this->conn->query($req, $param);
     }
     
     /**
@@ -211,7 +211,7 @@ class AccessBDD {
      */
     public function selectMaxDvd(){
         $req = "Select MAX(id) AS id FROM dvd";
-        return $this->conn->query($req);
+        return $this->conn->query($req, $param);
     }
     
     /**
@@ -220,13 +220,13 @@ class AccessBDD {
      */
     public function selectMaxRevue(){
         $req = "Select MAX(id) AS id FROM revue";
-        return $this->conn->query($req);
+        return $this->conn->query($req, $param);
     }
     
     
      /**
      * Recuperation de touts les exemplaires d'un livre_dvd
-     * @param string $idLivreDvd id du livre_dvd
+     * @param string $id id du livre_dvd
      * @return ligne de la requete
      */
     public function selectCommandesDocument($idLivreDvd) {
