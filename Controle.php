@@ -60,11 +60,18 @@ class Controle{
      * @param array $champs nom et valeur des champs
      */
     public function delete($table, $champs){
-        if($table == "commandedocument"){
-            $result = $this ->accessBDD->deleteCommande($table, $champs);
-        }
-        else{
-        $result = $this->accessBDD->delete($table, $champs);
+        if ($table == "livre"){
+            $result = $this->accessBDD->deleteLivre($champs);	
+        }elseif ($table == "dvd"){
+            $result = $this->accessBDD->deleteDvd($champs);
+        }elseif ($table == "revue"){
+            $result = $this->accessBDD->deleteRevue($champs);
+        }elseif ($table == "commandedocument"){
+            $result = $this->accessBDD->deleteCommande($champs);
+        }elseif ($table == "abonnement"){
+            $result = $this->accessBDD->deleteAbonnement($champs);
+        }else{
+            $result = $this->accessBDD->delete($table, $champs);
         }
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
@@ -79,11 +86,18 @@ class Controle{
      * @param array $champs nom et valeur des champs
      */
     public function post($table, $champs){
-        if($table == "commandedocument"){
-            $result = $this ->accessBDD->insertCommande($table, $champs);
-        }
-        else{
-        $result = $this->accessBDD->insertOne($table, $champs);	
+        if ($table == "livre"){
+            $result = $this->accessBDD->insertLivre($champs);	
+        }elseif ($table == "dvd"){
+            $result = $this->accessBDD->insertDvd($champs);
+        }elseif ($table == "revue"){
+            $result = $this->accessBDD->insertRevue($champs);
+        }elseif ($table == "commandedocument"){
+            $result = $this->accessBDD->insertCommande($champs);
+        }elseif ($table == "abonnement"){
+            $result = $this->accessBDD->insertAbonnement($champs);
+        }else{
+            $result = $this->accessBDD->insertOne($table, $champs);	
         }
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
@@ -92,6 +106,7 @@ class Controle{
         }
     }
 
+
     /**
      * requete arrivée en PUT (update)
      * @param string $table nom de la table
@@ -99,18 +114,26 @@ class Controle{
      * @param array $champs nom et valeur des champs
      */
     public function put($table, $id, $champs){
-        if ($table == "commandedocument"){
+        if ($table == "livre"){
+            $result = $this->accessBDD->updateLivre($id, $champs);	
+        }elseif ($table == "dvd"){
+            $result = $this->accessBDD->updateDvd($id, $champs);
+        }elseif ($table == "revue"){
+            $result = $this->accessBDD->updateRevue($id, $champs);
+        }elseif ($table == "commandedocument"){
             $result = $this->accessBDD->updateCommande($id, $champs);
-        
+        }elseif ($table == "abonnement"){
+            $result = $this->accessBDD->updateAbonnement($id, $champs);
         }else{
-        $result = $this->accessBDD->updateOne($table, $id, $champs);
-        }
+            $result = $this->accessBDD->updateOne($table, $id, $champs);
+        }	
         if ($result == null || $result == false){
             $this->reponse(400, "requete invalide");
         }else{	
             $this->reponse(200, "OK");
         }
     }
+
 	
     /**
      * login et/ou pwd incorrects

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : jeu. 21 mars 2024 à 02:02
+-- Généré le : jeu. 28 mars 2024 à 04:06
 -- Version du serveur : 5.7.40
 -- Version de PHP : 7.4.33
 
@@ -21,6 +21,77 @@ SET time_zone = "+00:00";
 -- Base de données : `mediatek86`
 --
 
+DELIMITER $$
+--
+-- Procédures
+--
+DROP PROCEDURE IF EXISTS `creerExemplaire`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `creerExemplaire` (IN `nbExemplaire` INTEGER, IN `idDocument` VARCHAR(10), IN `dateAchatC` DATE)   BEGIN
+    DECLARE nb INTEGER;
+    DECLARE maxId INTEGER;
+    SET nb = 0;
+    WHILE nb < nbExemplaire DO
+        SELECT MAX(numero) INTO maxId FROM exemplaire WHERE id = idDocument;
+        IF (maxId is null) THEN
+            SET maxid = 0;
+        END IF;
+        SET maxId = maxId + 1;
+        INSERT INTO exemplaire(id, numero, dateAchat, idEtat, photo)
+        VALUES (idDocument, maxId, dateAchatC, '00001', "");
+        SET nb = nb + 1;
+    END WHILE ;
+END$$
+
+DROP PROCEDURE IF EXISTS `majDvd`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `majDvd` (IN `id` VARCHAR(10))   BEGIN
+DECLARE nb INTEGER ;
+	SELECT COUNT(*) INTO nb
+    FROM livre
+    WHERE BINARY id = BINARY idDvd ;
+    IF (nb = 1) THEN
+    	SIGNAL SQLSTATE "45000"
+    	SET MESSAGE_TEXT = "operation impossible";
+    END IF ;
+END$$
+
+DROP PROCEDURE IF EXISTS `majLivre`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `majLivre` (IN `id` VARCHAR(10))   BEGIN
+DECLARE nb INTEGER ;
+	SELECT COUNT(*) INTO nb
+    FROM dvd
+    WHERE BINARY id = BINARY livre.id ;
+    IF (nb = 1) THEN
+    	SIGNAL SQLSTATE "45000"
+    	SET MESSAGE_TEXT = "operation impossible";
+    END IF ;
+END$$
+
+DROP PROCEDURE IF EXISTS `majLivreDvd`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `majLivreDvd` (IN `id` VARCHAR(10))   BEGIN
+DECLARE nb INTEGER ;
+	SELECT COUNT(*)INTO nb
+    	FROM revue
+    	WHERE BINARY id = BINARY idLivreDvd ;
+    IF (nb = 1) THEN
+    	SIGNAL SQLSTATE "45000"
+        	SET MESSAGE_TEXT = " operation impossible";
+    END IF; 
+END$$
+
+DROP PROCEDURE IF EXISTS `majRevue`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `majRevue` (IN `id` VARCHAR(10))   BEGIN
+DECLARE nb INTEGER ;
+	SELECT COUNT(*)INTO nb
+    	FROM livres_dvd
+    	WHERE id = idrevue ;
+    IF (nb = 1) THEN
+    	SIGNAL SQLSTATE "45000"
+        	SET MESSAGE_TEXT = " operation impossible";
+    END IF; 
+END$$
+
+DELIMITER ;
+
 -- --------------------------------------------------------
 
 --
@@ -35,6 +106,24 @@ CREATE TABLE IF NOT EXISTS `abonnement` (
   PRIMARY KEY (`id`),
   KEY `idRevue` (`idRevue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Déclencheurs `abonnement`
+--
+DROP TRIGGER IF EXISTS `insAbonnement`;
+DELIMITER $$
+CREATE TRIGGER `insAbonnement` BEFORE INSERT ON `abonnement` FOR EACH ROW BEGIN
+    DECLARE nb INTEGER ;
+    SELECT COUNT(*) INTO nb
+        FROM commandedocument
+        WHERE id =  NEW.id ;
+    IF (nb = 1) THEN
+        SIGNAL SQLSTATE "45000" 
+          SET MESSAGE_TEXT = "opération impossible";
+    END IF ;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -56,9 +145,15 @@ CREATE TABLE IF NOT EXISTS `commande` (
 
 INSERT INTO `commande` (`id`, `dateCommande`, `montant`) VALUES
 ('001', '2024-03-05', 25.3),
-('002', '2024-03-04', 25.3),
-('003', '2024-03-20', 50),
-('004', '2024-03-22', 25.3);
+('004', '2024-03-22', 25.3),
+('005', '2024-03-04', 25.3),
+('006', '2024-03-04', 25.3),
+('007', '2024-03-28', 50),
+('008', '2024-03-27', 50),
+('009', '2024-03-27', 15),
+('010', '2024-03-04', 50),
+('011', '2024-03-28', 5),
+('012', '2024-03-28', 50);
 
 -- --------------------------------------------------------
 
@@ -83,9 +178,53 @@ CREATE TABLE IF NOT EXISTS `commandedocument` (
 
 INSERT INTO `commandedocument` (`id`, `nbExemplaire`, `idLivreDvd`, `idsuivi`) VALUES
 ('001', 5, '00001', 1),
-('002', NULL, '00001', 2),
-('003', 5, '00002', 1),
-('004', 8, '00019', 1);
+('004', 8, '00019', 1),
+('006', 5, '00002', 1),
+('007', 1, '20003', 1),
+('009', 5, '20005', 2),
+('010', 5, '00001', 4);
+
+--
+-- Déclencheurs `commandedocument`
+--
+DROP TRIGGER IF EXISTS `insCommandeDocument`;
+DELIMITER $$
+CREATE TRIGGER `insCommandeDocument` AFTER INSERT ON `commandedocument` FOR EACH ROW BEGIN
+    DECLARE nb INTEGER ;
+    SELECT COUNT(*) INTO nb
+        FROM abonnement
+        WHERE id =  NEW.id ;
+    IF (nb = 1) THEN
+        SIGNAL SQLSTATE "45000" 
+          SET MESSAGE_TEXT = "opération impossible";
+    END IF ;
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `insExemplaire`;
+DELIMITER $$
+CREATE TRIGGER `insExemplaire` AFTER INSERT ON `commandedocument` FOR EACH ROW BEGIN
+    DECLARE dateAchat DATE ;
+    IF (NEW.idsuivi > 2 ) THEN
+        SELECT dateCommande INTO dateAchat FROM commande WHERE id = NEW.id ;
+        CALL creerExemplaire(NEW.nbExemplaire, NEW.idLivreDvd, dateAchat);
+    END iF;
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `upExemplaire`;
+DELIMITER $$
+CREATE TRIGGER `upExemplaire` AFTER UPDATE ON `commandedocument` FOR EACH ROW BEGIN
+    DECLARE dateAchat DATE ;
+    IF (OLD.idsuivi < 3 ) THEN
+        IF (NEW.idsuivi > 2 ) THEN
+            SELECT dateCommande INTO dateAchat FROM commande WHERE id = NEW.id ;
+            CALL creerExemplaire(NEW.nbExemplaire, NEW.idLivreDvd, dateAchat);
+        END iF;
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -112,13 +251,14 @@ CREATE TABLE IF NOT EXISTS `document` (
 --
 
 INSERT INTO `document` (`id`, `titre`, `image`, `idRayon`, `idPublic`, `idGenre`) VALUES
+('000001', 'test', '', 'BD001', '00004', '10018'),
+('000006', 'test', '', 'DF001', '00001', '10003'),
 ('00001', 'mon livre', '', 'BL001', '00001', '10018'),
 ('00002', 'Un pays à l\'aube', '', 'LV001', '00002', '10004'),
 ('00003', 'Et je danse aussi1', '', 'LV002', '00003', '10013'),
 ('00004', 'L\'armée furieuse', '', 'LV003', '00002', '10014'),
+('000045', 'test', '', 'BD001', '00002', '10007'),
 ('00005', 'Les anonymes', '', 'LV001', '00002', '10014'),
-('00006', 'La marque jaunatre', '', 'BD001', '00003', '10001'),
-('00007', 'Dans les coulisses du musée', '', 'LV001', '00003', '10006'),
 ('00008', 'Histoire du juif errant', '', 'LV002', '00002', '10006'),
 ('00009', 'Pars vite et reviens tard', '', 'LV003', '00002', '10014'),
 ('0001', 'test', '', 'BL001', '00002', '10018'),
@@ -137,9 +277,15 @@ INSERT INTO `document` (`id`, `titre`, `image`, `idRayon`, `idPublic`, `idGenre`
 ('00023', 'Le secret du janissaire', '', 'BD001', '00002', '10001'),
 ('00024', 'Pavillon noir', '', 'BD001', '00002', '10001'),
 ('00025', 'L\'archipel du danger0', '', 'BD001', '00002', '10001'),
-('00026', 'La planète des singes', '', 'LV002', '00003', '10002'),
+('00026', 'La planète des singes 2', '', 'LV002', '00003', '10002'),
+('00027', 'ohk', '', 'BL001', '00004', '10018'),
+('0006', 'JIUH', '', 'BD001', '00004', '10007'),
 ('0011', 'test', '', 'DF001', '00004', '10013'),
+('00112', 'test', '', 'BL001', '00004', '10018'),
+('00126', 'test', '', 'BD001', '00002', '10007'),
+('0022', 'test', '', 'BL001', '00004', '10018'),
 ('00401', 'hdruydqgqet', '', 'BL001', '00004', '10007'),
+('0065', 'xvdwxs', '', 'BL001', '00004', '10018'),
 ('01', 'test', '', 'BD001', '00004', '10018'),
 ('1', 'titre', '', 'BD001', '00004', '10018'),
 ('10001', 'Arts Magazine', '', 'PR002', '00002', '10016'),
@@ -152,7 +298,7 @@ INSERT INTO `document` (`id`, `titre`, `image`, `idRayon`, `idPublic`, `idGenre`
 ('10008', 'L\'Obs', '', 'PR002', '00002', '10018'),
 ('10009', 'L\'Equipe', '', 'PR001', '00002', '10017'),
 ('10010', 'L\'Equipe Magazine', '', 'PR002', '00002', '10017'),
-('10011', 'Geo', '', 'PR002', '00003', '10016'),
+('10011', 'Geo225', '', 'PR002', '00003', '10016'),
 ('10017', 'test', '', 'BD001', '00004', '10018'),
 ('111', '*ùlpoùik', '', 'BL001', '00004', '10018'),
 ('11111', 'test', '', 'BL001', '00004', '10007'),
@@ -166,9 +312,22 @@ INSERT INTO `document` (`id`, `titre`, `image`, `idRayon`, `idPublic`, `idGenre`
 ('20006', 'test', '', 'DV005', '00003', '10011'),
 ('20007', 'mon film', '', 'BD001', '00004', '10018'),
 ('20220', 'test', '', 'BD001', '00004', '10018'),
-('54684', 'test', '', 'DF001', '00002', '10018'),
+('2752', 'dfh', '', 'BD001', '00004', '10007'),
+('3', 'tedst', NULL, 'BD001', '00001', '10000'),
+('393', 'ghd', '', 'BD001', '00002', '10007'),
+('45456', 'lnhkhgk', '', 'BD001', '00004', '10007'),
+('4548574', 'dfhdh', '', 'BL001', '00004', '10007'),
+('456', 'KHKU', '', 'BD001', '00002', '10007'),
+('45874', 'khjmlih', '', 'DF001', '00002', '10001'),
+('46984', 'cgbcfh', '', 'BL001', '00004', '10001'),
+('54646', 'sfsfsf', '', 'BL001', '00004', '10007'),
+('54654', 'dgdg', '', 'BD001', '00004', '10018'),
 ('5474853', 'tedt', '', 'DF001', '00004', '10007'),
+('54849', 'dgdsfghdfs', '', 'BD001', '00002', '10007'),
+('5654', 'dgddfdf', '', 'BL001', '00004', '10007'),
 ('56746347', 'test', '', 'BD001', '00004', '10018'),
+('62468', 'tgdsh', '', 'BL001', '00004', '10007'),
+('6265', 'fgdgd', '', 'BD001', '00004', '10007'),
 ('6486', 'test', '', 'BD001', '00004', '10001'),
 ('674564', 'test', '', 'BD001', '00004', '10018'),
 ('7768796', 'test', '', 'BL001', '00004', '10018');
@@ -200,6 +359,17 @@ INSERT INTO `dvd` (`id`, `synopsis`, `realisateur`, `duree`) VALUES
 ('20005', 'test', 'test', 55),
 ('6486', 'test', 'test', 0),
 ('7768796', '', 'rgd', 50);
+
+--
+-- Déclencheurs `dvd`
+--
+DROP TRIGGER IF EXISTS `insDvd`;
+DELIMITER $$
+CREATE TRIGGER `insDvd` BEFORE INSERT ON `dvd` FOR EACH ROW BEGIN
+    CALL majDvd(NEW.id);
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -246,6 +416,11 @@ CREATE TABLE IF NOT EXISTS `exemplaire` (
 --
 
 INSERT INTO `exemplaire` (`id`, `numero`, `dateAchat`, `photo`, `idEtat`) VALUES
+('00001', 1, '2024-03-04', '', '00001'),
+('00001', 2, '2024-03-04', '', '00001'),
+('00001', 3, '2024-03-04', '', '00001'),
+('00001', 4, '2024-03-04', '', '00001'),
+('00001', 5, '2024-03-04', '', '00001'),
 ('10002', 418, '2021-12-01', '', '00001'),
 ('10007', 3237, '2021-11-23', '', '00001'),
 ('10007', 3238, '2021-11-30', '', '00001'),
@@ -320,10 +495,7 @@ CREATE TABLE IF NOT EXISTS `livre` (
 --
 
 INSERT INTO `livre` (`id`, `ISBN`, `auteur`, `collection`) VALUES
-('00002', '1236547896541', 'Dennis Lehanne', ''),
 ('00005', '3214563214563', 'RJ Ellory', ''),
-('00006', '3213213211232', 'Edgar P. Jacobs', 'Blake et Mortimer'),
-('00007', '', 'test', 'test'),
 ('00009', '', 'Fred Vargas', 'Commissaire Adamsberg'),
 ('00010', '', 'Manon Moreau', ''),
 ('00012', '', 'Kate Atkinson', ''),
@@ -334,8 +506,18 @@ INSERT INTO `livre` (`id`, `ISBN`, `auteur`, `collection`) VALUES
 ('00022', '', 'Claudie Gallay', ''),
 ('00023', '', 'Ayrolles - Masbou', 'De cape et de crocs'),
 ('00024', '', 'Ayrolles - Masbou', 'De cape et de crocs'),
-('00026', '', 'Pierre Boulle', 'Julliard'),
-('54684', '', 'test', 'test');
+('00026', '', 'Pierre Boulle', 'Julliard');
+
+--
+-- Déclencheurs `livre`
+--
+DROP TRIGGER IF EXISTS `insLivre`;
+DELIMITER $$
+CREATE TRIGGER `insLivre` AFTER INSERT ON `livre` FOR EACH ROW BEGIN
+    CALL majLivre(NEW.id);
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -359,8 +541,6 @@ INSERT INTO `livres_dvd` (`id`) VALUES
 ('00003'),
 ('00004'),
 ('00005'),
-('00006'),
-('00007'),
 ('00008'),
 ('00009'),
 ('00010'),
@@ -392,12 +572,29 @@ INSERT INTO `livres_dvd` (`id`) VALUES
 ('20006'),
 ('20007'),
 ('20220'),
-('54684'),
 ('5474853'),
 ('56746347'),
 ('6486'),
 ('674564'),
 ('7768796');
+
+--
+-- Déclencheurs `livres_dvd`
+--
+DROP TRIGGER IF EXISTS `insLivreDvd`;
+DELIMITER $$
+CREATE TRIGGER `insLivreDvd` BEFORE INSERT ON `livres_dvd` FOR EACH ROW BEGIN
+	CALL majLivreDvd(NEW.id);
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `insLivresDvd`;
+DELIMITER $$
+CREATE TRIGGER `insLivresDvd` BEFORE INSERT ON `livres_dvd` FOR EACH ROW BEGIN
+    CALL majLivresDvd(NEW.id);
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -493,14 +690,14 @@ INSERT INTO `revue` (`id`, `periodicite`, `delaiMiseADispo`) VALUES
 DROP TRIGGER IF EXISTS `insRevue`;
 DELIMITER $$
 CREATE TRIGGER `insRevue` BEFORE INSERT ON `revue` FOR EACH ROW BEGIN
-DECLARE nb INTEGER ;
-	SELECT COUNT(*)INTO nb
-    	FROM livres_dvd
-    	WHERE id = revue.id ;
-    IF (nb = 1) THEN
-    	SIGNAL SQLSTATE "45000"
-        	SET MESSAGE_TEXT = " operation impossible";
-    END IF; 
+	CALL majRevue(NEW.id);
+END
+$$
+DELIMITER ;
+DROP TRIGGER IF EXISTS `upRevue`;
+DELIMITER $$
+CREATE TRIGGER `upRevue` BEFORE INSERT ON `revue` FOR EACH ROW BEGIN
+	CALL majRevue(New.id);
 END
 $$
 DELIMITER ;
@@ -524,7 +721,9 @@ CREATE TABLE IF NOT EXISTS `suivi` (
 
 INSERT INTO `suivi` (`id`, `etat`) VALUES
 (1, 'commande en cours'),
-(2, 'commande livrée');
+(2, 'réglé'),
+(3, 'Commande en livraison'),
+(4, 'Commande finalisée');
 
 --
 -- Contraintes pour les tables déchargées
