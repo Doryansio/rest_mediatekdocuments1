@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : mer. 03 avr. 2024 à 11:29
+-- Généré le : mer. 03 avr. 2024 à 09:43
 -- Version du serveur : 5.7.40
 -- Version de PHP : 7.4.33
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de données : `mediatek86`
+-- Base de données : `mediatek`
 --
 
 DELIMITER $$
@@ -64,18 +64,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `majLivre` (IN `idLivre` VARCHAR(10)
         SIGNAL SQLSTATE "45000" 
           SET MESSAGE_TEXT = "opération impossible";
     END IF ;
-END$$
-
-DROP PROCEDURE IF EXISTS `majLivreDvd`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `majLivreDvd` (IN `id` VARCHAR(10))   BEGIN
-DECLARE nb INTEGER ;
-	SELECT COUNT(*)INTO nb
-    	FROM revue
-    	WHERE BINARY id = BINARY idLivreDvd ;
-    IF (nb = 1) THEN
-    	SIGNAL SQLSTATE "45000"
-        	SET MESSAGE_TEXT = " operation impossible";
-    END IF; 
 END$$
 
 DROP PROCEDURE IF EXISTS `majLivresDvd`$$
@@ -327,7 +315,6 @@ INSERT INTO `document` (`id`, `titre`, `image`, `idRayon`, `idPublic`, `idGenre`
 ('00024', 'Pavillon noir', '', 'BD001', '00002', '10001'),
 ('00025', 'L\'archipel du danger', '', 'BD001', '00002', '10001'),
 ('00026', 'La planète des singes', '', 'LV002', '00003', '10002'),
-('007', 'essai', '', 'BL001', '00004', '10001'),
 ('10001', 'Arts Magazine', '', 'PR002', '00002', '10016'),
 ('10002', 'Alternatives Economiques', '', 'PR002', '00002', '10015'),
 ('10003', 'Challenges', '', 'PR002', '00002', '10015'),
@@ -554,8 +541,7 @@ INSERT INTO `livre` (`id`, `ISBN`, `auteur`, `collection`) VALUES
 ('00023', '', 'Ayrolles - Masbou', 'De cape et de crocs'),
 ('00024', '', 'Ayrolles - Masbou', 'De cape et de crocs'),
 ('00025', '', 'Ayrolles - Masbou', 'De cape et de crocs'),
-('00026', '', 'Pierre Boulle', 'Julliard'),
-('007', '1111111111111', 'essai', 'essai');
+('00026', '', 'Pierre Boulle', 'Julliard');
 
 --
 -- Déclencheurs `livre`
@@ -611,7 +597,6 @@ INSERT INTO `livres_dvd` (`id`) VALUES
 ('00024'),
 ('00025'),
 ('00026'),
-('007'),
 ('20001'),
 ('20002'),
 ('20003'),
@@ -797,12 +782,7 @@ CREATE TABLE IF NOT EXISTS `utilisateur` (
 --
 
 INSERT INTO `utilisateur` (`id`, `nom`, `prenom`, `mail`, `password`, `idservice`) VALUES
-('0001', 'Paul', 'Paul', 'paul@mail.com', '0558687dff97785f3391d655a2b9a38ec99a8e0dc20d9ef192cc3861bd2347f8', '0001'),
-('0002', 'pat', 'jean', 'jean@pat.com', '0558687dff97785f3391d655a2b9a38ec99a8e0dc20d9ef192cc3861bd2347f8', '0002'),
-('0003', 'monique', 'monique', 'momo@gmail.com', '0558687dff97785f3391d655a2b9a38ec99a8e0dc20d9ef192cc3861bd2347f8', '0003'),
-('0004', 'Martin', 'Martine', 'Ma@mail.com', '0558687dff97785f3391d655a2b9a38ec99a8e0dc20d9ef192cc3861bd2347f8', '0004'),
-('00078', 'dod', 'dod', 'dod@gmail.com', '47625ed74cab8fbc0a8348f3df1feb07f87601e34d62bd12eb0d51616566fab5', '0001'),
-('0008', 'Doryan', 'Doryan', 'doryan@gmail.com', '22b7fe89464437fdebf2782bc1d9d50da58768d5158eeb42931fe7c142c099bf', '0001');
+('0001', 'monrose', 'doryan', 'doryan@gmail.com', '7166754502**dm', '0001');
 
 --
 -- Contraintes pour les tables déchargées

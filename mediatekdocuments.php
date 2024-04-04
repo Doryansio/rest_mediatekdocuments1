@@ -28,8 +28,7 @@ if(!isset($_SERVER['PHP_AUTH_USER']) || (isset($_SERVER['PHP_AUTH_USER']) &&
     // traitement suivant le verbe HTTP utilisé
     if($_SERVER['REQUEST_METHOD'] === 'GET'){
         $controle->get($table, $champs);
-    }else if($_SERVER['REQUEST_METHOD'] === 'POST'){
-        
+    }else if($_SERVER['REQUEST_METHOD'] === 'POST'){   
         $controle->post($table, $champs);
     }else if($_SERVER['REQUEST_METHOD'] === 'PUT'){
         $controle->put($table, $id, $champs);

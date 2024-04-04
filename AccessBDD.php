@@ -78,6 +78,8 @@ class AccessBDD {
                     return $this->selectCommandesDocument($champs['idLivreDvd']);
                 case "abonnements" :
                     return $this->selectAbonnementsRevue($champs['idRevue']);
+                case "utilisateur" :
+                    return $this->selectUtilisateur($champs);
                 default:                    
                     // cas d'un select sur une table avec recherche sur des champs
                     return $this->selectTableOnConditons($table, $champs);					
@@ -201,6 +203,34 @@ class AccessBDD {
         $req .= "order by c.dateCommande DESC";	
         return $this->conn->query($req, $param);
 
+    }
+    
+    /**
+     * recupere un utilisateur si les données correspondent
+     * @param [type] $champs
+     * @return ligne de la requete
+     */
+    
+    public function selectUtilisateur($champs)      
+    {
+        $param = array(
+            "mail" => $champs["mail"],
+            "password" => $champs["password"]
+        );
+        $req = "Select u.id, u.nom, u.prenom, u.mail, u.idservice, s.libelle as service ";
+        $req .= "from utilisateur u join service s on u.idservice=s.id ";
+        $req .= "where u.mail = :mail ";
+        $req .= "and u.password = :password ";
+        $req .= "or u.nom = :mail ";
+        $req .= "and u.password = :password";
+        
+        //var_dump('21654564653465465165496465');
+        return $this->conn->query($req, $param);
+        
+        
+        
+        
+        
     }
 
     /**
@@ -417,7 +447,7 @@ class AccessBDD {
             return null;
         }
     }
-
+    
     /**
      * Ajout de l'entitée composée livre dans la bdd
      *
@@ -430,8 +460,7 @@ class AccessBDD {
             "image" => $champs["Image"] , "idRayon" => $champs["IdRayon"],
             "idPublic" => $champs["IdPublic"], "idGenre" => $champs["IdGenre"]];
         $champsLivreDvd = [ "id" => $champs["Id"]];
-        $champsLivre = [ "id" => $champs["Id"], "ISBN" => $champs["Isbn"],
-                "auteur" => $champs["Auteur"], "collection" => $champs["Collection"]];
+        $champsLivre = [ "id" => $champs["Id"], "ISBN" => $champs["isbn"],"auteur" => $champs["Auteur"], "collection" => $champs["Collection"]];
         $result = $this->insertOne("document", $champsDocument);
         if ($result == null || $result == false){
             return null;
