@@ -8,7 +8,7 @@ class AccessBDD {
 	
     public $login="root";
     public $mdp="";
-    public $bd="mediatek86";
+    public $bd="mediatek";
     public $serveur="localhost";
     public $port="3306";	
     public $conn = null;
